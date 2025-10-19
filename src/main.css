@@ -19,13 +19,14 @@ body {
 	place-items: center;
 	min-width: 320px;
 	min-height: 100vh;
+	overflow: hidden;
 }
 
 #textCanvas {
 	z-index: 10;
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: -2px;
+	left: -2px;
 	border: 2px solid red;
 	display: none;
 }

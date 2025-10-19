@@ -11,7 +11,15 @@ const ctx = canvas.getContext("2d", {
 let animFrameHandle = null;
 
 // set size
-const minPxLength = 343;
+const minPxLength = 500;
+const lineHeightMultiplier = 1.2;
+let font = {
+	"size": 100,
+	"family": "monospace",
+};
+function getFontString () {
+	return font.size + "px " + font.family;
+}
 let width = window.innerWidth;
 let height = window.innerHeight;
 let pxLength = Math.min(width, height, minPxLength);
@@ -28,18 +36,18 @@ document.body.appendChild(textCanvas);
 textCanvas.width = pxWidth;
 textCanvas.height = pxHeight;
 const textCtx = textCanvas.getContext("2d");
-textCtx.font = "100px monospace";
+textCtx.font = getFontString();
 textCtx.textAlign = "center";
 textCtx.textBaseline = "middle";
 textCtx.fillStyle = "white";
 let text = "Hello!";
-textCtx.fillText(text, textCanvas.width / 2, textCanvas.height / 2);
+writeText(text);
 function initTextCanvas () {
-	textCtx.font = "100px monospace";
+	textCtx.font = getFontString();
 	textCtx.textAlign = "center";
 	textCtx.textBaseline = "middle";
 	textCtx.fillStyle = "white";
-	textCtx.fillText(text, textCanvas.width / 2, textCanvas.height / 2);
+	writeText(text);
 }
 
 window.addEventListener("resize", () => {
@@ -59,9 +67,10 @@ window.addEventListener("resize", () => {
 	fillStatic();
 });
 
-function writeText (text) {
+function textToLines (text) {
+	textCtx.font = getFontString();
 	text = text.split(" ");
-	let textBlocks = [];
+	let lines = [];
 	let currentBlocks = [];
 	let currentWidth = 0;
 	let maxWidth = pxWidth * 0.9;
@@ -76,7 +85,7 @@ function writeText (text) {
 		if ((currentWidth + additionalWidth) > maxWidth) {
 			if (currentBlocks.length) {
 				// add completed block
-				textBlocks.push(currentBlocks.join(" "));
+				lines.push([currentBlocks.join(" ")]);
 				
 				// calculate height & width
 				let metrics = textCtx.measureText(currentBlocks.join(" "));
@@ -95,12 +104,13 @@ function writeText (text) {
 		if (additionalWidth > maxWidth) {
 			let segmentChars = segment.split("");
 			let segmentPart = "";
+			let lineGroup = [];
 			// word is too big; go character by character until it breaks at a line
 			for (let char of segmentChars) {
 				let partWidth = textCtx.measureText(segmentPart + char).width;
 				if (partWidth > maxWidth) {
 					// add completed block
-					textBlocks.push(segmentPart);
+					lineGroup.push(segmentPart);
 					
 					// calculate height & width
 					let metrics = textCtx.measureText(segmentPart);
@@ -114,6 +124,7 @@ function writeText (text) {
 				}
 				segmentPart += char;
 			}
+			lines.push(lineGroup);
 			currentBlocks.push(segmentPart);
 			additionalWidth = textCtx.measureText(segmentPart).width;
 		}
@@ -121,7 +132,7 @@ function writeText (text) {
 	}
 	if (currentBlocks.length) {
 		// leftover phrase? add it too
-		textBlocks.push(currentBlocks.join(" "));
+		lines.push(currentBlocks.join(" "));
 		
 		// calculate height & width
 		let metrics = textCtx.measureText(currentBlocks.join(" "));
@@ -132,17 +143,55 @@ function writeText (text) {
 		// no need to reset (work done)
 	}
 	
-	textCtx.clearRect(0, 0, pxWidth, pxHeight);
-	let lineHeight = tallestLine * 1.2;
+	return {
+		lines,
+		widestLine,
+		tallestLine,
+	};
+}
+
+function writeText (text) {
+	let sizePerfected = false;
+	let lines, linesLiteral, widestLine, tallestLine;
+	let maxIterations = 10; // prevent infinite loop
+	while ((!sizePerfected) && (maxIterations --> 0)) {
+		({ lines, widestLine, tallestLine } = textToLines(text));
+		linesLiteral = lines.flat();
+		let totalHeight = linesLiteral.length * tallestLine * lineHeightMultiplier;
+		if (totalHeight > pxHeight) { // vertical size exceeded! no wrapping can save that :[
+			font.size -= 5; // only solution is to reduce font size
+		} else {
+			sizePerfected = true;
+		}
+	}
 	
-	let totalLines = textBlocks.length;
-	textBlocks.forEach((block, i) => {
+	textCtx.clearRect(0, 0, pxWidth, pxHeight);
+	let lineHeight = tallestLine * lineHeightMultiplier;
+	
+	let totalLines = linesLiteral.length;
+	linesLiteral.forEach((block, i) => {
 		let lineDiff = (i - Math.floor(totalLines / 2) + 0.5 * (1 - totalLines % 2));
 		// above line of code: center middle line in center (perfect for odd # of lines),
 		// and then shift half a line if even number of lines (so that even # of lines is also properly centered)
 		
 		textCtx.fillText(block, pxWidth / 2, (pxHeight / 2) + (lineDiff * lineHeight));
+		
+		// [testing purposes] vertical line heights
+		textCtx.beginPath();
+		textCtx.strokeStyle = "blue";
+		textCtx.lineWidth = 5;
+		textCtx.lineCap = "round";
+		textCtx.moveTo((pxWidth / 2 - widestLine / 2) - 20, pxHeight/2 + (lineDiff - 0.5) * lineHeight);
+		textCtx.lineTo((pxWidth / 2 - widestLine / 2) - 10, pxHeight/2 + (lineDiff + 0.5) * lineHeight);
+		textCtx.stroke();
 	});
+	
+	// [testing purposes] horizontal line at bottom
+	textCtx.beginPath();
+	textCtx.moveTo((pxWidth / 2) - (widestLine / 2), pxHeight - 10);
+	textCtx.lineTo((pxWidth / 2) + (widestLine / 2), pxHeight - 10);
+	textCtx.stroke();
+	
 }
 
 // canvas & context ready!
