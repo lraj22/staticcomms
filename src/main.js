@@ -11,11 +11,11 @@ const ctx = canvas.getContext("2d", {
 let animFrameHandle = null;
 
 // set size
-const minPxLength = 500;
+const minPxLength = 343;
 let width = window.innerWidth;
 let height = window.innerHeight;
 let pxLength = Math.min(width, height, minPxLength);
-let pixelSize = Math.min(width, height) / pxLength;
+let pixelSize = Math.floor(Math.min(width, height) / pxLength);
 let pxWidth = Math.ceil(width / pixelSize);
 let pxHeight = Math.ceil(height / pixelSize);
 canvas.width = width;
@@ -24,7 +24,7 @@ window.addEventListener("resize", () => {
 	width = window.innerWidth;
 	height = window.innerHeight;
 	pxLength = Math.min(width, height, minPxLength);
-	pixelSize = Math.min(width, height) / pxLength;
+	pixelSize = Math.floor(Math.min(width, height) / pxLength);
 	pxWidth = Math.ceil(width / pixelSize);
 	pxHeight = Math.ceil(height / pixelSize);
 	canvas.width = width;
@@ -59,10 +59,11 @@ textCtx.fillStyle = "white";
 textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
 
 
-const fps = 60; // should be high enough to see message
+const fps = Infinity; // should be high enough to see message
 const fpsMinMilliseconds = 1000 / fps;
 let frame = 0;
 let lastTick = 0;
+let lastReset = 0;
 let firstTime = true;
 function tick () {
 	const textData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
@@ -80,7 +81,13 @@ function tick () {
 		return;
 	}
 	lastTick = now;
+	
 	frame++;
+	if (now > (lastReset + 950)) {
+		lastReset = now;
+		fillStatic();
+	}
+	
 	// update screen
 	let pixelData = ctx.getImageData(0, 0, width, height);
 	let data = pixelData.data;
@@ -89,12 +96,8 @@ function tick () {
 		for (let x = 0; x < pxWidth; x++) {
 			let gray = Math.random() * 255;
 			
-			if (1 || Math.floor((Math.floor(Date.now()) % pxHeight) / 50) !== Math.floor(y / 50)) { // ignore condition for now
-				if (textData[(y * pxWidth + x) * 4] > 128) {
-					continue; // do not update (text remains constant)
-				}
-			} else {
-				// gray = 255; // uncomment this to show where updater line is
+			if (textData[(y * pxWidth + x) * 4] > 128) {
+				continue; // do not update (text remains constant)
 			}
 			
 			setPixel(data, x, y, gray);
