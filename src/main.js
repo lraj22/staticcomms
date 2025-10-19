@@ -46,11 +46,27 @@ window.addEventListener("keyup", e => {
 	isShiftDown = e.shiftKey;
 });
 
-const fps = 30; // should be high enough to see message
+// canvas to determine where text pixels are (not displayed)
+const textCanvas = document.createElement("canvas");
+textCanvas.id = "textCanvas";
+textCanvas.width = pxWidth;
+textCanvas.height = pxHeight;
+const textCtx = textCanvas.getContext("2d");
+textCtx.font = "100px monospace";
+textCtx.textAlign = "center";
+textCtx.textBaseline = "middle";
+textCtx.fillStyle = "white";
+textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
+
+
+const fps = 60; // should be high enough to see message
 const fpsMinMilliseconds = 1000 / fps;
+let frame = 0;
 let lastTick = 0;
 let firstTime = true;
 function tick () {
+	const textData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
+	
 	// key control
 	if (isShiftDown) { // hold shift to freeze
 		animFrameHandle = requestAnimationFrame(tick);
@@ -64,18 +80,24 @@ function tick () {
 		return;
 	}
 	lastTick = now;
-	
+	frame++;
 	// update screen
 	let pixelData = ctx.getImageData(0, 0, width, height);
 	let data = pixelData.data;
+	let visibility = 0.4;
 	for (let y = 0; y < pxHeight; y++) {
-		if (
-			(y > ((10 + performance.now() / 10) % pxHeight)) && (y < ((10 + performance.now() / 10) % pxHeight + 40))
-			&& (!firstTime)
-		) continue; // purpose: to keep a solid block on screen and see how it acts visibly
 		for (let x = 0; x < pxWidth; x++) {
-			let whiteOrBlack = Math.floor(Math.random() * 2);
-			setPixel(data, x, y, Math.random() * 255);
+			let gray = Math.random() * 255;
+			
+			if (1 || Math.floor((Math.floor(Date.now()) % pxHeight) / 50) !== Math.floor(y / 50)) { // ignore condition for now
+				if (textData[(y * pxWidth + x) * 4] > 128) {
+					continue; // do not update (text remains constant)
+				}
+			} else {
+				// gray = 255; // uncomment this to show where updater line is
+			}
+			
+			setPixel(data, x, y, gray);
 		}
 	}
 	ctx.putImageData(pixelData, 0, 0);
@@ -87,6 +109,17 @@ animFrameHandle = requestAnimationFrame(tick);
 function getPixelNumber (x, y) {
 	return (y * width + x) * 4 * pixelSize;
 }
+
+function fillStatic () {
+	let data = ctx.getImageData(0, 0, width, height);
+	for (let y = 0; y < pxHeight; y++) {
+		for (let x = 0; x < pxWidth; x++) {
+			setPixel(data, x, y, Math.random() * 255);
+		}
+	}
+	ctx.putImageData(data, 0, 0);
+}
+fillStatic();
 
 /*
  * setPixel() -> void
@@ -107,6 +140,7 @@ function setPixel (pixelData, x, y, red, green, blue) {
 			data[pixelNumber + pxShift] = red;
 			data[pixelNumber + pxShift + 1] = green;
 			data[pixelNumber + pxShift + 2] = blue;
+			data[pixelNumber + pxShift + 3] = 255;
 		}
 	}
 }
