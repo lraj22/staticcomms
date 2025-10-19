@@ -65,22 +65,44 @@ function writeText (text) {
 	let currentBlocks = [];
 	let currentWidth = 0;
 	let maxWidth = pxWidth * 0.8;
+	let widestLine = 0;
 	
 	for (let segment of text) {
-		if (currentWidth !== 0) segment = " " + segment;
-		let additionalWidth = textCtx.measureText(segment).width;
+		let effectiveSegment = segment;
+		if (currentWidth !== 0) effectiveSegment = " " + effectiveSegment;
+		let additionalWidth = textCtx.measureText(effectiveSegment).width;
 		if ((currentWidth + additionalWidth) > maxWidth) {
 			if (currentBlocks.length) {
 				textBlocks.push(currentBlocks.join(" "));
 				currentBlocks = [];
+				widestLine = Math.max(widestLine, currentWidth);
 				currentWidth = 0;
 			}
 		}
-		currentBlocks.push(segment.trim());
+		currentBlocks.push(segment);
+		
+		// in case the new word is so long that it overflows the entire screen
+		if (additionalWidth > maxWidth) {
+			let segmentChars = segment.split("");
+			let segmentPart = "";
+			for (let char of segmentChars) {
+				let partWidth = textCtx.measureText(segmentPart + char).width;
+				if (partWidth > maxWidth) {
+					textBlocks.push(segmentPart);
+					currentBlocks = [];
+					widestLine = Math.max(widestLine, partWidth);
+					segmentPart = "";
+				}
+				segmentPart += char;
+			}
+			currentBlocks.push(segmentPart);
+			additionalWidth = textCtx.measureText(segmentPart).width;
+		}
 		currentWidth += additionalWidth;
 	}
 	if (currentBlocks.length) {
 		textBlocks.push(currentBlocks.join(" "));
+		widestLine = Math.max(widestLine, currentWidth);
 	}
 	
 	textCtx.clearRect(0, 0, pxWidth, pxHeight);
@@ -128,8 +150,6 @@ let frame = 0;
 let lastTick = 0;
 let lastReset = 0;
 function tick () {
-	const textData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
-	
 	// key control
 	if (isShiftDown) { // hold shift to freeze
 		animFrameHandle = requestAnimationFrame(tick);
@@ -152,6 +172,7 @@ function tick () {
 	
 	// update screen
 	let pixelData = ctx.getImageData(0, 0, width, height);
+	const textData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
 	let data = pixelData.data;
 	for (let y = 0; y < pxHeight; y++) {
 		for (let x = 0; x < pxWidth; x++) {
