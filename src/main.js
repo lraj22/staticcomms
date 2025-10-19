@@ -20,6 +20,26 @@ let pxWidth = Math.ceil(width / pixelSize);
 let pxHeight = Math.ceil(height / pixelSize);
 canvas.width = width;
 canvas.height = height;
+
+// canvas to determine where text pixels are (not displayed)
+const textCanvas = document.createElement("canvas");
+textCanvas.id = "textCanvas";
+textCanvas.width = pxWidth;
+textCanvas.height = pxHeight;
+const textCtx = textCanvas.getContext("2d");
+textCtx.font = "100px monospace";
+textCtx.textAlign = "center";
+textCtx.textBaseline = "middle";
+textCtx.fillStyle = "white";
+textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
+function initTextCanvas () {
+	textCtx.font = "100px monospace";
+	textCtx.textAlign = "center";
+	textCtx.textBaseline = "middle";
+	textCtx.fillStyle = "white";
+	textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
+}
+
 window.addEventListener("resize", () => {
 	width = window.innerWidth;
 	height = window.innerHeight;
@@ -29,6 +49,9 @@ window.addEventListener("resize", () => {
 	pxHeight = Math.ceil(height / pixelSize);
 	canvas.width = width;
 	canvas.height = height;
+	textCanvas.width = pxWidth;
+	textCanvas.height = pxHeight;
+	initTextCanvas();
 	ctx.fillStyle = "black"; // default bg
 	ctx.fillRect(0, 0, width, height);
 });
@@ -45,19 +68,6 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => {
 	isShiftDown = e.shiftKey;
 });
-
-// canvas to determine where text pixels are (not displayed)
-const textCanvas = document.createElement("canvas");
-textCanvas.id = "textCanvas";
-textCanvas.width = pxWidth;
-textCanvas.height = pxHeight;
-const textCtx = textCanvas.getContext("2d");
-textCtx.font = "100px monospace";
-textCtx.textAlign = "center";
-textCtx.textBaseline = "middle";
-textCtx.fillStyle = "white";
-textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
-
 
 const fps = Infinity; // should be high enough to see message
 const fpsMinMilliseconds = 1000 / fps;
