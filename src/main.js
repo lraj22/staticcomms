@@ -64,11 +64,12 @@ function writeText (text) {
 	let textBlocks = [];
 	let currentBlocks = [];
 	let currentWidth = 0;
+	let maxWidth = pxWidth * 0.8;
 	
 	for (let segment of text) {
 		if (currentWidth !== 0) segment = " " + segment;
 		let additionalWidth = textCtx.measureText(segment).width;
-		if ((currentWidth + additionalWidth) > pxWidth) {
+		if ((currentWidth + additionalWidth) > maxWidth) {
 			if (currentBlocks.length) {
 				textBlocks.push(currentBlocks.join(" "));
 				currentBlocks = [];
@@ -94,14 +95,6 @@ function writeText (text) {
 	});
 }
 
-window.addEventListener("dblclick", () => {
-	let newText = prompt("Enter the new text to show", text);
-	if (newText) {
-		writeText(newText);
-		text = newText;
-	}
-});
-
 // canvas & context ready!
 ctx.fillStyle = "black"; // default bg
 ctx.fillRect(0, 0, width, height);
@@ -111,6 +104,19 @@ fillStatic();
 let isShiftDown = false;
 window.addEventListener("keydown", e => {
 	isShiftDown = e.shiftKey;
+	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "x") {
+		document.querySelector(".popup.active").classList.remove("active");
+	}
+	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "h") {
+		document.getElementById("helpMenu").classList.add("active");
+	}
+	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "Enter") {
+		let newText = prompt("Enter the new text to show", text);
+		if (newText !== null) {
+			writeText(newText);
+			text = newText;
+		}
+	}
 });
 window.addEventListener("keyup", e => {
 	isShiftDown = e.shiftKey;
@@ -200,3 +206,9 @@ function setPixel (pixelData, x, y, red, green, blue) {
 		}
 	}
 }
+
+document.querySelectorAll(".closeBtn").forEach(closeBtn => {
+	closeBtn.addEventListener("click", () => {
+		closeBtn.parentElement.classList.remove("active");
+	});
+});

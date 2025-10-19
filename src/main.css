@@ -29,3 +29,34 @@ body {
 	border: 2px solid red;
 	display: none;
 }
+
+.popup {
+	display: none;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	
+	background-color: black;
+	opacity: 80%;
+	border-radius: 4px;
+	box-shadow: rgba(0, 0, 0, 0.5) 0 4px 4px 2px;
+	
+	min-width: 400px;
+	width: 50vw;
+	max-width: 90vw;
+	padding: 1rem;
+	box-sizing: border-box;
+}
+
+.closeBtn {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	cursor: pointer;
+	user-select: none;
+}
+
+.popup.active {
+	display: block;
+}
