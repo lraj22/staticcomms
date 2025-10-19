@@ -8,11 +8,14 @@ const canvas = document.querySelector("canvas"); // dom.canvas
 const ctx = canvas.getContext("2d", {
 	// "willReadFrequently": true,
 });
+let animFrameHandle = null;
 
 // set size
-let pixelSize = 4;
+const minPxLength = 500;
 let width = window.innerWidth;
 let height = window.innerHeight;
+let pxLength = Math.min(width, height, minPxLength);
+let pixelSize = Math.min(width, height) / pxLength;
 let pxWidth = Math.ceil(width / pixelSize);
 let pxHeight = Math.ceil(height / pixelSize);
 canvas.width = width;
@@ -20,14 +23,18 @@ canvas.height = height;
 window.addEventListener("resize", () => {
 	width = window.innerWidth;
 	height = window.innerHeight;
+	pxLength = Math.min(width, height, minPxLength);
+	pixelSize = Math.min(width, height) / pxLength;
 	pxWidth = Math.ceil(width / pixelSize);
 	pxHeight = Math.ceil(height / pixelSize);
 	canvas.width = width;
 	canvas.height = height;
+	ctx.fillStyle = "black"; // default bg
+	ctx.fillRect(0, 0, width, height);
 });
 
 // canvas & context ready!
-ctx.fillStyle = "lightblue"; // default bg
+ctx.fillStyle = "black"; // default bg
 ctx.fillRect(0, 0, width, height);
 
 // key management
@@ -39,21 +46,21 @@ window.addEventListener("keyup", e => {
 	isShiftDown = e.shiftKey;
 });
 
-const fps = 12;
+const fps = 30; // should be high enough to see message
 const fpsMinMilliseconds = 1000 / fps;
 let lastTick = 0;
 let firstTime = true;
 function tick () {
 	// key control
 	if (isShiftDown) { // hold shift to freeze
-		requestAnimationFrame(tick);
+		animFrameHandle = requestAnimationFrame(tick);
 		return;
 	}
 	
 	// control fps
 	let now = Date.now();
 	if (now < (lastTick + fpsMinMilliseconds)) {
-		requestAnimationFrame(tick);
+		animFrameHandle = requestAnimationFrame(tick);
 		return;
 	}
 	lastTick = now;
@@ -63,7 +70,7 @@ function tick () {
 	let data = pixelData.data;
 	for (let y = 0; y < pxHeight; y++) {
 		if (
-			(y > (100 + performance.now() / 100)) && (y < (150 + performance.now() / 100))
+			(y > ((10 + performance.now() / 10) % pxHeight)) && (y < ((10 + performance.now() / 10) % pxHeight + 40))
 			&& (!firstTime)
 		) continue; // purpose: to keep a solid block on screen and see how it acts visibly
 		for (let x = 0; x < pxWidth; x++) {
@@ -73,9 +80,9 @@ function tick () {
 	}
 	ctx.putImageData(pixelData, 0, 0);
 	firstTime = false;
-	requestAnimationFrame(tick);
+	animFrameHandle = requestAnimationFrame(tick);
 }
-requestAnimationFrame(tick);
+animFrameHandle = requestAnimationFrame(tick);
 
 function getPixelNumber (x, y) {
 	return (y * width + x) * 4 * pixelSize;
