@@ -64,18 +64,28 @@ function writeText (text) {
 	let textBlocks = [];
 	let currentBlocks = [];
 	let currentWidth = 0;
-	let maxWidth = pxWidth * 0.8;
+	let maxWidth = pxWidth * 0.9;
 	let widestLine = 0;
+	let tallestLine = 0;
 	
 	for (let segment of text) {
 		let effectiveSegment = segment;
 		if (currentWidth !== 0) effectiveSegment = " " + effectiveSegment;
 		let additionalWidth = textCtx.measureText(effectiveSegment).width;
+		// phrase is too long; break at this word
 		if ((currentWidth + additionalWidth) > maxWidth) {
 			if (currentBlocks.length) {
+				// add completed block
 				textBlocks.push(currentBlocks.join(" "));
-				currentBlocks = [];
+				
+				// calculate height & width
+				let metrics = textCtx.measureText(currentBlocks.join(" "));
+				let currentHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
 				widestLine = Math.max(widestLine, currentWidth);
+				tallestLine = Math.max(tallestLine, currentHeight);
+				
+				// reset for next line
+				currentBlocks = [];
 				currentWidth = 0;
 			}
 		}
@@ -85,12 +95,21 @@ function writeText (text) {
 		if (additionalWidth > maxWidth) {
 			let segmentChars = segment.split("");
 			let segmentPart = "";
+			// word is too big; go character by character until it breaks at a line
 			for (let char of segmentChars) {
 				let partWidth = textCtx.measureText(segmentPart + char).width;
 				if (partWidth > maxWidth) {
+					// add completed block
 					textBlocks.push(segmentPart);
-					currentBlocks = [];
+					
+					// calculate height & width
+					let metrics = textCtx.measureText(segmentPart);
+					let currentHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+					tallestLine = Math.max(tallestLine, currentHeight);
 					widestLine = Math.max(widestLine, partWidth);
+					
+					// reset for next segment
+					currentBlocks = [];
 					segmentPart = "";
 				}
 				segmentPart += char;
@@ -101,12 +120,21 @@ function writeText (text) {
 		currentWidth += additionalWidth;
 	}
 	if (currentBlocks.length) {
+		// leftover phrase? add it too
 		textBlocks.push(currentBlocks.join(" "));
-		widestLine = Math.max(widestLine, currentWidth);
+		
+		// calculate height & width
+		let metrics = textCtx.measureText(currentBlocks.join(" "));
+		let currentHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+		tallestLine = Math.max(tallestLine, currentHeight);
+		widestLine = Math.max(widestLine, metrics.width);
+		
+		// no need to reset (work done)
 	}
 	
 	textCtx.clearRect(0, 0, pxWidth, pxHeight);
-	let lineHeight = 200 / pixelSize;
+	let lineHeight = tallestLine * 1.2;
+	
 	let totalLines = textBlocks.length;
 	textBlocks.forEach((block, i) => {
 		let lineDiff = (i - Math.floor(totalLines / 2) + 0.5 * (1 - totalLines % 2));
