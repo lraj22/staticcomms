@@ -32,13 +32,14 @@ textCtx.font = "100px monospace";
 textCtx.textAlign = "center";
 textCtx.textBaseline = "middle";
 textCtx.fillStyle = "white";
-textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
+let text = "Hello!";
+textCtx.fillText(text, textCanvas.width / 2, textCanvas.height / 2);
 function initTextCanvas () {
 	textCtx.font = "100px monospace";
 	textCtx.textAlign = "center";
 	textCtx.textBaseline = "middle";
 	textCtx.fillStyle = "white";
-	textCtx.fillText("Testing", textCanvas.width / 2, textCanvas.height / 2);
+	textCtx.fillText(text, textCanvas.width / 2, textCanvas.height / 2);
 }
 
 window.addEventListener("resize", () => {
@@ -55,6 +56,7 @@ window.addEventListener("resize", () => {
 	initTextCanvas();
 	ctx.fillStyle = "black"; // default bg
 	ctx.fillRect(0, 0, width, height);
+	fillStatic();
 });
 
 function writeText (text) {
@@ -62,6 +64,7 @@ function writeText (text) {
 	let textBlocks = [];
 	let currentBlocks = [];
 	let currentWidth = 0;
+	
 	for (let segment of text) {
 		if (currentWidth !== 0) segment = " " + segment;
 		let additionalWidth = textCtx.measureText(segment).width;
@@ -78,27 +81,31 @@ function writeText (text) {
 	if (currentBlocks.length) {
 		textBlocks.push(currentBlocks.join(" "));
 	}
+	
 	textCtx.clearRect(0, 0, pxWidth, pxHeight);
-	let centerWidth = pxWidth / 2;
-	let centerHeight = pxHeight / 2;
 	let lineHeight = 200 / pixelSize;
+	let totalLines = textBlocks.length;
 	textBlocks.forEach((block, i) => {
-		textCtx.fillText(block, centerWidth, centerHeight + (
-			(i - Math.floor(textBlocks.length / 2) + 0.5 * (1 - textBlocks.length % 2)) * lineHeight
-		));
+		let lineDiff = (i - Math.floor(totalLines / 2) + 0.5 * (1 - totalLines % 2));
+		// above line of code: center middle line in center (perfect for odd # of lines),
+		// and then shift half a line if even number of lines (so that even # of lines is also properly centered)
+		
+		textCtx.fillText(block, pxWidth / 2, (pxHeight / 2) + (lineDiff * lineHeight));
 	});
 }
 
 window.addEventListener("dblclick", () => {
-	let newText = prompt("Enter the new text to show");
+	let newText = prompt("Enter the new text to show", text);
 	if (newText) {
 		writeText(newText);
+		text = newText;
 	}
 });
 
 // canvas & context ready!
 ctx.fillStyle = "black"; // default bg
 ctx.fillRect(0, 0, width, height);
+fillStatic();
 
 // key management
 let isShiftDown = false;
@@ -144,8 +151,8 @@ function tick () {
 		for (let x = 0; x < pxWidth; x++) {
 			let gray = Math.random() * 240; // not 255: 240 is slightly less bright to make contrast better! trading off static obscurity for moving contrast
 			
-			if (textData[(y * pxWidth + x) * 4] > 128) {
-				continue; // do not update (text remains constant)
+			if (textData[(y * pxWidth + x) * 4] > 128) { // if white (indicates text),
+				continue; // do not update because text remains constant
 			}
 			
 			setPixel(data, x, y, gray);
@@ -169,12 +176,11 @@ function fillStatic () {
 	}
 	ctx.putImageData(data, 0, 0);
 }
-fillStatic();
 
 /*
  * setPixel() -> void
- * takes ImageData, number of pixel, and color of pixel
- * number of pixel can be literal pixel number or array representing [x, y] position of pixel
+ * takes ImageData, pixel location, and color of pixel
+ * pixel location is an [x, y] pair representing the coordinate of the pixel
  * color of pixel can be one value 0 or 1 (black/white), one value 0-255 (all shades of gray), or 3 values (rgb)
  */
 function setPixel (pixelData, x, y, red, green, blue) {
