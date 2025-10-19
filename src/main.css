@@ -20,3 +20,12 @@ body {
 	min-width: 320px;
 	min-height: 100vh;
 }
+
+#textCanvas {
+	z-index: 10;
+	position: absolute;
+	top: 0;
+	left: 0;
+	border: 2px solid red;
+	display: none;
+}

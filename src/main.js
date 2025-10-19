@@ -24,6 +24,7 @@ canvas.height = height;
 // canvas to determine where text pixels are (not displayed)
 const textCanvas = document.createElement("canvas");
 textCanvas.id = "textCanvas";
+document.body.appendChild(textCanvas);
 textCanvas.width = pxWidth;
 textCanvas.height = pxHeight;
 const textCtx = textCanvas.getContext("2d");
@@ -56,6 +57,45 @@ window.addEventListener("resize", () => {
 	ctx.fillRect(0, 0, width, height);
 });
 
+function writeText (text) {
+	text = text.split(" ");
+	let textBlocks = [];
+	let currentBlocks = [];
+	let currentWidth = 0;
+	for (let segment of text) {
+		if (currentWidth !== 0) segment = " " + segment;
+		let additionalWidth = textCtx.measureText(segment).width;
+		if ((currentWidth + additionalWidth) > pxWidth) {
+			if (currentBlocks.length) {
+				textBlocks.push(currentBlocks.join(" "));
+				currentBlocks = [];
+				currentWidth = 0;
+			}
+		}
+		currentBlocks.push(segment.trim());
+		currentWidth += additionalWidth;
+	}
+	if (currentBlocks.length) {
+		textBlocks.push(currentBlocks.join(" "));
+	}
+	textCtx.clearRect(0, 0, pxWidth, pxHeight);
+	let centerWidth = pxWidth / 2;
+	let centerHeight = pxHeight / 2;
+	let lineHeight = 200 / pixelSize;
+	textBlocks.forEach((block, i) => {
+		textCtx.fillText(block, centerWidth, centerHeight + (
+			(i - Math.floor(textBlocks.length / 2) + 0.5 * (1 - textBlocks.length % 2)) * lineHeight
+		));
+	});
+}
+
+window.addEventListener("dblclick", () => {
+	let newText = prompt("Enter the new text to show");
+	if (newText) {
+		writeText(newText);
+	}
+});
+
 // canvas & context ready!
 ctx.fillStyle = "black"; // default bg
 ctx.fillRect(0, 0, width, height);
@@ -74,7 +114,6 @@ const fpsMinMilliseconds = 1000 / fps;
 let frame = 0;
 let lastTick = 0;
 let lastReset = 0;
-let firstTime = true;
 function tick () {
 	const textData = textCtx.getImageData(0, 0, textCanvas.width, textCanvas.height).data;
 	
@@ -101,10 +140,9 @@ function tick () {
 	// update screen
 	let pixelData = ctx.getImageData(0, 0, width, height);
 	let data = pixelData.data;
-	let visibility = 0.4;
 	for (let y = 0; y < pxHeight; y++) {
 		for (let x = 0; x < pxWidth; x++) {
-			let gray = Math.random() * 255;
+			let gray = Math.random() * 240; // not 255: 240 is slightly less bright to make contrast better! trading off static obscurity for moving contrast
 			
 			if (textData[(y * pxWidth + x) * 4] > 128) {
 				continue; // do not update (text remains constant)
@@ -114,7 +152,6 @@ function tick () {
 		}
 	}
 	ctx.putImageData(pixelData, 0, 0);
-	firstTime = false;
 	animFrameHandle = requestAnimationFrame(tick);
 }
 animFrameHandle = requestAnimationFrame(tick);
