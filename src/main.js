@@ -26,8 +26,25 @@ let pxLength = Math.min(width, height, minPxLength);
 let pixelSize = Math.floor(Math.min(width, height) / pxLength);
 let pxWidth = Math.ceil(width / pixelSize);
 let pxHeight = Math.ceil(height / pixelSize);
+let pixelSizeOverride = null;
 canvas.width = width;
 canvas.height = height;
+function updateAllSizes () {
+	width = window.innerWidth;
+	height = window.innerHeight;
+	pxLength = Math.min(width, height, minPxLength);
+	pixelSize = pixelSizeOverride || Math.floor(Math.min(width, height) / pxLength);
+	pxWidth = Math.ceil(width / pixelSize);
+	pxHeight = Math.ceil(height / pixelSize);
+	canvas.width = width;
+	canvas.height = height;
+	textCanvas.width = pxWidth;
+	textCanvas.height = pxHeight;
+	initTextCanvas();
+	ctx.fillStyle = "black"; // default bg
+	ctx.fillRect(0, 0, width, height);
+	fillStatic();
+}
 
 // canvas to determine where text pixels are (not displayed)
 const textCanvas = document.createElement("canvas");
@@ -49,6 +66,7 @@ let params = new URL(location.href).searchParams;
 let paramStaticMode = params.get("staticMode");
 let paramText = params.get("text");
 let paramFont = params.get("font");
+let paramPixelSize = params.get("pixelSize");
 if (paramStaticMode !== null) {
 	defaultOn = (paramStaticMode === "on");
 }
@@ -58,6 +76,10 @@ if (paramText !== null) {
 if (paramFont !== null) {
 	font.family = paramFont;
 }
+if (paramPixelSize !== null) {
+	pixelSizeOverride = parseInt(paramPixelSize) || null;
+}
+updateAllSizes();
 
 writeText(text);
 function initTextCanvas () {
@@ -68,22 +90,7 @@ function initTextCanvas () {
 	writeText(text);
 }
 
-window.addEventListener("resize", () => {
-	width = window.innerWidth;
-	height = window.innerHeight;
-	pxLength = Math.min(width, height, minPxLength);
-	pixelSize = Math.floor(Math.min(width, height) / pxLength);
-	pxWidth = Math.ceil(width / pixelSize);
-	pxHeight = Math.ceil(height / pixelSize);
-	canvas.width = width;
-	canvas.height = height;
-	textCanvas.width = pxWidth;
-	textCanvas.height = pxHeight;
-	initTextCanvas();
-	ctx.fillStyle = "black"; // default bg
-	ctx.fillRect(0, 0, width, height);
-	fillStatic();
-});
+window.addEventListener("resize", updateAllSizes);
 
 function textToLines (text) {
 	textCtx.font = getFontString();
@@ -308,7 +315,18 @@ window.addEventListener("keydown", e => {
 		settingsUrl.searchParams.set("text", text);
 		settingsUrl.searchParams.set("font", font.family);
 		settingsUrl.searchParams.set("staticMode", defaultOn ? "on" : "off");
-		alert("Your bookmarkable URL is: " + settingsUrl.href);
+		if (pixelSizeOverride) settingsUrl.searchParams.set("pixelSize", pixelSizeOverride);
+		alert("Your bookmarkable URL is:\n" + settingsUrl.href);
+	}
+	if (e.key === "p") {
+		let newPixelSize = prompt("What size should each pixel be?", pixelSize);
+		if (parseInt(newPixelSize)) { // valid number, let's set the pixel size to it
+			pixelSizeOverride = parseInt(newPixelSize);
+			updateAllSizes();
+		} else if (newPixelSize !== null) { // they set it to something invalid, indicating to reset to default
+			pixelSizeOverride = null;
+			updateAllSizes();
+		}
 	}
 });
 window.addEventListener("keyup", e => {
