@@ -43,6 +43,22 @@ textCtx.fillStyle = "white";
 let text = "Hidden signals";
 let isTextHidden = false;
 let defaultOn = true;
+
+// load params from URL
+let params = new URL(location.href).searchParams;
+let paramStaticMode = params.get("staticMode");
+let paramText = params.get("text");
+let paramFont = params.get("font");
+if (paramStaticMode !== null) {
+	defaultOn = (paramStaticMode === "on");
+}
+if (paramText !== null) {
+	text = paramText;
+}
+if (paramFont !== null) {
+	font.family = paramFont;
+}
+
 writeText(text);
 function initTextCanvas () {
 	textCtx.font = getFontString();
