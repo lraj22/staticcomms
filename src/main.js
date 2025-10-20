@@ -40,7 +40,7 @@ textCtx.font = getFontString();
 textCtx.textAlign = "center";
 textCtx.textBaseline = "middle";
 textCtx.fillStyle = "white";
-let text = "Hello!";
+let text = "Hidden signals";
 writeText(text);
 function initTextCanvas () {
 	textCtx.font = getFontString();
@@ -70,7 +70,7 @@ window.addEventListener("resize", () => {
 function textToLines (text) {
 	textCtx.font = getFontString();
 	text = text.split(" ");
-	let lines = [];
+	let lineGroups = [];
 	let currentBlocks = [];
 	let currentWidth = 0;
 	let maxWidth = pxWidth * 0.9;
@@ -85,7 +85,8 @@ function textToLines (text) {
 		if ((currentWidth + additionalWidth) > maxWidth) {
 			if (currentBlocks.length) {
 				// add completed block
-				lines.push([currentBlocks.join(" ")]);
+				lineGroups.push(currentBlocks.join(" "));
+				console.log("regular overflow pushed:", [currentBlocks.join(" ")]);
 				
 				// calculate height & width
 				let metrics = textCtx.measureText(currentBlocks.join(" "));
@@ -98,10 +99,10 @@ function textToLines (text) {
 				currentWidth = 0;
 			}
 		}
-		currentBlocks.push(segment);
 		
 		// in case the new word is so long that it overflows the entire screen
 		if (additionalWidth > maxWidth) {
+			console.log("super overflow!", segment, additionalWidth, maxWidth);
 			let segmentChars = segment.split("");
 			let segmentPart = "";
 			let lineGroup = [];
@@ -111,6 +112,7 @@ function textToLines (text) {
 				if (partWidth > maxWidth) {
 					// add completed block
 					lineGroup.push(segmentPart);
+					console.log("line group added:", segmentPart);
 					
 					// calculate height & width
 					let metrics = textCtx.measureText(segmentPart);
@@ -124,15 +126,22 @@ function textToLines (text) {
 				}
 				segmentPart += char;
 			}
-			lines.push(lineGroup);
-			currentBlocks.push(segmentPart);
+			if (lineGroup.length) {
+				lineGroups.push(lineGroup);
+				console.log("line group pushed:", lineGroup);
+			}
+			console.log("adding remaining to", currentBlocks);
+			currentBlocks.push(segmentPart); // add remaining part of word to line
 			additionalWidth = textCtx.measureText(segmentPart).width;
+		} else {
+			currentBlocks.push(segment); // word is normal sized. add it to the line
 		}
 		currentWidth += additionalWidth;
 	}
 	if (currentBlocks.length) {
 		// leftover phrase? add it too
-		lines.push(currentBlocks.join(" "));
+		lineGroups.push(currentBlocks.join(" "));
+		console.log("leftover pushed:", [currentBlocks.join(" ")]);
 		
 		// calculate height & width
 		let metrics = textCtx.measureText(currentBlocks.join(" "));
@@ -144,32 +153,60 @@ function textToLines (text) {
 	}
 	
 	return {
-		lines,
+		lineGroups,
 		widestLine,
 		tallestLine,
 	};
 }
 
+function linesToPattern (lines) {
+	return lines.filter(lineGrouping => Array.isArray(lineGrouping)).map(lineGroup => lineGroup.length).join(" ");
+}
+
 function writeText (text) {
 	let sizePerfected = false;
-	let lines, linesLiteral, widestLine, tallestLine;
-	let maxIterations = 10; // prevent infinite loop
+	let lineGroups, lines, widestLine, tallestLine;
+	let maxIterations = 1000; // prevent infinite loop
+	let isFontSizeIncreasing = false;
+	let lineGroupPattern = null;
+	font.size = 100;
 	while ((!sizePerfected) && (maxIterations --> 0)) {
-		({ lines, widestLine, tallestLine } = textToLines(text));
-		linesLiteral = lines.flat();
-		let totalHeight = linesLiteral.length * tallestLine * lineHeightMultiplier;
+		({ lineGroups, widestLine, tallestLine } = textToLines(text));
+		lines = lineGroups.flat();
+		console.log(lineGroups);
+		let totalHeight = lines.length * tallestLine * lineHeightMultiplier;
 		if (totalHeight > pxHeight) { // vertical size exceeded! no wrapping can save that :[
-			font.size -= 5; // only solution is to reduce font size
-		} else {
-			sizePerfected = true;
+			if (isFontSizeIncreasing) { // aka: it only exceeded because we were increasing the font size
+				font.size -= 3;
+				sizePerfected = true;
+			} else { // it's been exceeded, make it fit
+				font.size -= 5; // only solution is to reduce font size
+			}
+		} else { // height not exceeded; let's see how large we can make the font without breaking lines/exceeding height
+			if (typeof lineGroupPattern === "string") {
+				let newLineGroupPattern = linesToPattern(lineGroups);
+				if (newLineGroupPattern !== lineGroupPattern) { // aka: some line broke
+					font.size -= 3;
+					sizePerfected = true;
+				}
+			} else {
+				lineGroupPattern = linesToPattern(lineGroups);
+			}
+			if (!isFontSizeIncreasing) {
+				isFontSizeIncreasing = true;
+			}
+			if (!sizePerfected) font.size += 3;
 		}
 	}
+	({ lineGroups, widestLine, tallestLine } = textToLines(text));
+	lines = lineGroups.flat();
+	console.log("final line groupings", lineGroups);
 	
 	textCtx.clearRect(0, 0, pxWidth, pxHeight);
 	let lineHeight = tallestLine * lineHeightMultiplier;
 	
-	let totalLines = linesLiteral.length;
-	linesLiteral.forEach((block, i) => {
+	let totalLines = lines.length;
+	lines.forEach((block, i) => {
 		let lineDiff = (i - Math.floor(totalLines / 2) + 0.5 * (1 - totalLines % 2));
 		// above line of code: center middle line in center (perfect for odd # of lines),
 		// and then shift half a line if even number of lines (so that even # of lines is also properly centered)
@@ -242,7 +279,7 @@ function tick () {
 	lastTick = now;
 	
 	frame++;
-	if (now > (lastReset + 950)) {
+	if (now > (lastReset + 450)) {
 		lastReset = now;
 		fillStatic();
 	}
@@ -253,7 +290,7 @@ function tick () {
 	let data = pixelData.data;
 	for (let y = 0; y < pxHeight; y++) {
 		for (let x = 0; x < pxWidth; x++) {
-			let gray = Math.random() * 240; // not 255: 240 is slightly less bright to make contrast better! trading off static obscurity for moving contrast
+			let gray = Math.random() * 255;
 			
 			if (textData[(y * pxWidth + x) * 4] > 128) { // if white (indicates text),
 				continue; // do not update because text remains constant
