@@ -41,6 +41,8 @@ textCtx.textAlign = "center";
 textCtx.textBaseline = "middle";
 textCtx.fillStyle = "white";
 let text = "Hidden signals";
+let isTextHidden = false;
+let defaultOn = true;
 writeText(text);
 function initTextCanvas () {
 	textCtx.font = getFontString();
@@ -164,6 +166,7 @@ function linesToPattern (lines) {
 }
 
 function writeText (text) {
+	text = isTextHidden ? "" : text;
 	let sizePerfected = false;
 	let lineGroups, lines, widestLine, tallestLine;
 	let maxIterations = 1000; // prevent infinite loop
@@ -175,6 +178,7 @@ function writeText (text) {
 		lines = lineGroups.flat();
 		console.log(lineGroups);
 		let totalHeight = lines.length * tallestLine * lineHeightMultiplier;
+		if (totalHeight === 0) break; // it will never reach vertical maximum
 		if (totalHeight > pxHeight) { // vertical size exceeded! no wrapping can save that :[
 			if (isFontSizeIncreasing) { // aka: it only exceeded because we were increasing the font size
 				font.size -= 3;
@@ -237,35 +241,65 @@ ctx.fillRect(0, 0, width, height);
 fillStatic();
 
 // key management
-let isShiftDown = false;
+let isSpaceDown = false;
 window.addEventListener("keydown", e => {
-	isShiftDown = e.shiftKey;
-	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "x") {
-		document.querySelector(".popup.active").classList.remove("active");
+	if (e.key === " ") isSpaceDown = true;
+	
+	let activePopup = document.querySelector(".popup.active");
+	
+	if (e.shiftKey || e.ctrlKey || e.altKey) return;
+	if (e.key === "x") {
+		if (activePopup) {
+			activePopup.classList.remove("active");
+		}
 	}
-	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "h") {
+	if (e.key === "h") {
+		if (activePopup) {
+			activePopup.classList.remove("active");
+		}
 		document.getElementById("helpMenu").classList.add("active");
 	}
-	if (!e.shiftKey && !e.ctrlKey && !e.altKey && e.key === "Enter") {
+	if (e.key === "Enter") {
 		let newText = prompt("Enter the new text to show", text);
 		if (newText !== null) {
+			isTextHidden = false;
 			writeText(newText);
 			text = newText;
 		}
 	}
+	if (e.key === "f") {
+		let newFont = prompt("Choose a basic font\nGeneric: sans-serif, serif, monospace, cursive\nYour device may support specific other fonts like arial, georgia, etc.", font.family);
+		if (newFont !== null) {
+			font.family = newFont;
+		}
+		writeText(text);
+	}
+	if (e.key === "/") {
+		if (activePopup) {
+			activePopup.classList.remove("active");
+		}
+		document.getElementById("keyboardShortcuts").classList.add("active");
+	}
+	if (e.key === "Backspace") {
+		isTextHidden = true;
+		writeText(text);
+	}
+	if (e.key === "s") {
+		defaultOn = !defaultOn;
+	}
 });
 window.addEventListener("keyup", e => {
-	isShiftDown = e.shiftKey;
+	if (e.key === " ") isSpaceDown = false;
 });
 
-const fps = Infinity; // should be high enough to see message
+const fps = Infinity; // should be high enough to see message (Infinity = no fps limit)
 const fpsMinMilliseconds = 1000 / fps;
 let frame = 0;
 let lastTick = 0;
 let lastReset = 0;
 function tick () {
 	// key control
-	if (isShiftDown) { // hold shift to freeze
+	if ((defaultOn && isSpaceDown) || (!defaultOn && !isSpaceDown)) { // hold shift to freeze
 		animFrameHandle = requestAnimationFrame(tick);
 		return;
 	}
@@ -279,7 +313,7 @@ function tick () {
 	lastTick = now;
 	
 	frame++;
-	if (now > (lastReset + 450)) {
+	if (now > (lastReset + 475)) { // less than 500 (so that anyone watching at 2 fps or less is unable to see anything)
 		lastReset = now;
 		fillStatic();
 	}
