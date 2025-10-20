@@ -299,7 +299,7 @@ let lastTick = 0;
 let lastReset = 0;
 function tick () {
 	// key control
-	if ((defaultOn && isSpaceDown) || (!defaultOn && !isSpaceDown)) { // hold shift to freeze
+	if ((defaultOn && isSpaceDown) || (!defaultOn && !isSpaceDown)) { // space reverses the default mode
 		animFrameHandle = requestAnimationFrame(tick);
 		return;
 	}
