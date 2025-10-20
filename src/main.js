@@ -303,6 +303,13 @@ window.addEventListener("keydown", e => {
 	if (e.key === "s") {
 		defaultOn = !defaultOn;
 	}
+	if (e.key === "e") {
+		let settingsUrl = new URL(location.href);
+		settingsUrl.searchParams.set("text", text);
+		settingsUrl.searchParams.set("font", font.family);
+		settingsUrl.searchParams.set("staticMode", defaultOn ? "on" : "off");
+		alert("Your bookmarkable URL is: " + settingsUrl.href);
+	}
 });
 window.addEventListener("keyup", e => {
 	if (e.key === " ") isSpaceDown = false;
