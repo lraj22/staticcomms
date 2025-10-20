@@ -240,22 +240,21 @@ function writeText (text) {
 		
 		textCtx.fillText(block, pxWidth / 2, (pxHeight / 2) + (lineDiff * lineHeight));
 		
-		// [testing purposes] vertical line heights
-		textCtx.beginPath();
-		textCtx.strokeStyle = "blue";
-		textCtx.lineWidth = 5;
-		textCtx.lineCap = "round";
-		textCtx.moveTo((pxWidth / 2 - widestLine / 2) - 20, pxHeight/2 + (lineDiff - 0.5) * lineHeight);
-		textCtx.lineTo((pxWidth / 2 - widestLine / 2) - 10, pxHeight/2 + (lineDiff + 0.5) * lineHeight);
-		textCtx.stroke();
+		// [testing purposes] vertical line height indicator (diagonal bars)
+		// textCtx.beginPath();
+		// textCtx.strokeStyle = "blue";
+		// textCtx.lineWidth = 5;
+		// textCtx.lineCap = "round";
+		// textCtx.moveTo((pxWidth / 2 - widestLine / 2) - 20, pxHeight/2 + (lineDiff - 0.5) * lineHeight);
+		// textCtx.lineTo((pxWidth / 2 - widestLine / 2) - 10, pxHeight/2 + (lineDiff + 0.5) * lineHeight);
+		// textCtx.stroke();
 	});
 	
-	// [testing purposes] horizontal line at bottom
-	textCtx.beginPath();
-	textCtx.moveTo((pxWidth / 2) - (widestLine / 2), pxHeight - 10);
-	textCtx.lineTo((pxWidth / 2) + (widestLine / 2), pxHeight - 10);
-	textCtx.stroke();
-	
+	// [testing purposes] text width (horizontal line at bottom)
+	// textCtx.beginPath();
+	// textCtx.moveTo((pxWidth / 2) - (widestLine / 2), pxHeight - 10);
+	// textCtx.lineTo((pxWidth / 2) + (widestLine / 2), pxHeight - 10);
+	// textCtx.stroke();
 }
 
 // canvas & context ready!
