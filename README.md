@@ -14,10 +14,10 @@ It's a little bit of visual magic and I'm pretty proud of it! Use it for whateve
 
 This is a Siege project.
 
-Messages are autofitted to your screen using a very complicated text engine-like algorithm. Visibility is best with short messages, as those appear largest. Long messages might even be unreadable, depending on how good you is at reading small static messages.
+Messages are autofitted to your screen using a very complicated text engine-like algorithm. Visibility is best with short messages, as those appear largest. Long messages might even be unreadable, depending on how good you are at reading small static messages.
 
 This project was made with vanilla JS Vite and was made by me! AI was used only to figure out HOW to hide messages in static, and did not end up in the codebase at all. In other words, it is all handwritten. I'm not going to lie, the AI was pretty bad at figuring it out so I didn't really use it at all, lol. Whatever.
 
-<hr><br>
+<hr>
 
 Made with 💖 by Lakshya Raj
